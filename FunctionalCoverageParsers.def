@@ -1,0 +1,54 @@
+; FunctionalCoverageParsers.def
+; Module definition file for FunctionalCoverageParsers DLL
+; This file explicitly exports the public API functions
+
+LIBRARY "FunctionalCoverageParsers"
+
+EXPORTS
+    ; Parser creation and destruction
+    create_dashboard_parser
+    create_groups_parser  
+    create_hierarchy_parser
+    create_modlist_parser
+    create_assert_parser
+    destroy_parser
+    
+    ; Database operations
+    create_coverage_database
+    destroy_coverage_database
+    validate_database
+    calculate_overall_score
+    generate_statistics
+    
+    ; Parsing functions
+    parse_dashboard_file
+    parse_groups_file
+    parse_hierarchy_file
+    parse_modlist_file
+    parse_assert_file
+    
+    ; Query functions
+    find_coverage_group
+    find_hierarchy_instance
+    find_module_definition
+    find_assert_coverage
+    
+    ; Utility functions
+    get_error_string
+    get_version_string
+    get_library_info
+    
+    ; Export functions
+    export_coverage_to_xml
+    export_coverage_to_json
+    generate_html_report
+    
+    ; Factory functions
+    create_parser_for_file
+    create_default_config
+    create_fast_config
+    create_detailed_config
+    
+    ; Memory management
+    get_memory_usage
+    cleanup_library
