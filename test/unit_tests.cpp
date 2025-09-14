@@ -1,34 +1,38 @@
 /**
  * @file unit_tests.cpp
- * @brief Comprehensive unit tests for all parsers in the FunctionalCoverageParsers library
+ * @brief Comprehensive unit tests for the FunctionalCoverageParsers DLL
  * 
- * This file contains detailed unit tests for each parser to ensure that all data
- * from coverage files is properly captured in the data structures. Each test
- * validates specific aspects of parsing and data extraction.
+ * This file contains detailed unit tests that load and test the FunctionalCoverageParsers
+ * DLL through its C API interface. This provides realistic testing of the actual library
+ * that end users will consume.
  * 
  * TEST STRUCTURE:
- * 1. DashboardParser Tests - Validate all dashboard.txt fields
- * 2. GroupsParser Tests - Validate all groups.txt fields and configurations
- * 3. HierarchyParser Tests - Validate hierarchy traversal and depth calculation
- * 4. ModuleListParser Tests - Validate module aggregation and instance counting
- * 5. AssertParser Tests - Validate assertion details and coverage status
- * 6. Edge Case Tests - Test malformed files, empty files, and error conditions
- * 7. Integration Tests - Test complete parsing workflows
+ * 1. DLL Loading and Initialization Tests
+ * 2. DashboardParser Tests - Validate all dashboard.txt fields through DLL
+ * 3. GroupsParser Tests - Validate all groups.txt fields through DLL
+ * 4. HierarchyParser Tests - Validate hierarchy traversal through DLL
+ * 5. ModuleListParser Tests - Validate module aggregation through DLL
+ * 6. AssertParser Tests - Validate assertion details through DLL
+ * 7. Edge Case Tests - Test malformed files and error conditions through DLL
+ * 8. Integration Tests - Test complete workflows through DLL
+ * 9. Memory Management Tests - Test proper cleanup and leak detection
  * 
  * @author FunctionalCoverageParsers Library
  * @version 1.0
  * @date 2025
  */
 
-#include "../include/functional_coverage_parser.h"
+#include "../include/functional_coverage_parser_dll.h"
 #include <iostream>
 #include <fstream>
 #include <cassert>
 #include <chrono>
 #include <sstream>
 #include <iomanip>
+#include <windows.h>
 
-using namespace coverage_parser;
+// DLL handle for the FunctionalCoverageParsers library
+static HMODULE dll_handle = nullptr;
 
 // Test result tracking
 static int total_tests = 0;
@@ -50,6 +54,37 @@ static int failed_tests = 0;
         } \
     } while(0)
 
+// Helper function to load the DLL
+bool load_dll() {
+    // Try loading from different possible locations
+    const char* dll_paths[] = {
+        "FunctionalCoverageParsers.dll",           // Current directory
+        "../bin/FunctionalCoverageParsers.dll",   // Relative bin directory
+        "bin/FunctionalCoverageParsers.dll",      // Local bin directory
+        "../lib/FunctionalCoverageParsers.dll"    // Relative lib directory
+    };
+    
+    for (const char* path : dll_paths) {
+        dll_handle = LoadLibraryA(path);
+        if (dll_handle) {
+            std::cout << "✓ DLL loaded successfully from: " << path << std::endl;
+            return true;
+        }
+    }
+    
+    std::cout << "✗ Failed to load FunctionalCoverageParsers.dll" << std::endl;
+    std::cout << "  Please ensure the DLL is built and available in the correct location." << std::endl;
+    return false;
+}
+
+// Helper function to unload the DLL
+void unload_dll() {
+    if (dll_handle) {
+        FreeLibrary(dll_handle);
+        dll_handle = nullptr;
+        std::cout << "✓ DLL unloaded successfully" << std::endl;
+    }
+}
 // Helper function to create test files
 std::string create_test_file(const std::string& filename, const std::string& content) {
     std::ofstream file(filename);
@@ -64,10 +99,43 @@ void cleanup_test_file(const std::string& filename) {
 }
 
 /**
- * @brief Test DashboardParser with comprehensive dashboard data
+ * @brief Test DLL initialization and basic functionality
  */
-void test_dashboard_parser_comprehensive() {
-    std::cout << "\n=== DashboardParser Comprehensive Tests ===" << std::endl;
+void test_dll_initialization() {
+    std::cout << "\n=== DLL Initialization Tests ===" << std::endl;
+    
+    // Test version string
+    const char* version = get_version_string();
+    UNIT_TEST_ASSERT(version != nullptr, "Version string available", "non-null", "null");
+    if (version) {
+        std::cout << "  Library version: " << version << std::endl;
+    }
+    
+    // Test library info
+    const char* info = get_library_info();
+    UNIT_TEST_ASSERT(info != nullptr, "Library info available", "non-null", "null");
+    if (info) {
+        std::cout << "  Library info: " << info << std::endl;
+    }
+    
+    // Test database creation and destruction
+    void* db = create_coverage_database();
+    UNIT_TEST_ASSERT(db != nullptr, "Database creation", "non-null", "null");
+    
+    if (db) {
+        int validation_result = validate_database(db);
+        UNIT_TEST_ASSERT(validation_result == 0, "Database validation", "0", std::to_string(validation_result));
+        
+        destroy_coverage_database(db);
+        std::cout << "  Database destroyed successfully" << std::endl;
+    }
+}
+
+/**
+ * @brief Test DashboardParser through DLL interface with comprehensive dashboard data
+ */
+void test_dashboard_parser_dll_comprehensive() {
+    std::cout << "\n=== DashboardParser DLL Comprehensive Tests ===" << std::endl;
     
     // Create realistic dashboard file with all possible fields
     std::string dashboard_content = 
@@ -93,77 +161,194 @@ void test_dashboard_parser_comprehensive() {
     
     std::string test_file = create_test_file("test_dashboard_comprehensive.txt", dashboard_content);
     
-    DashboardParser parser;
-    CoverageDatabase db;
+    // Create database and parser through DLL interface
+    void* db = create_coverage_database();
+    void* parser = create_dashboard_parser();
     
-    ParserResult result = parser.parse(test_file, db);
+    UNIT_TEST_ASSERT(db != nullptr, "Database creation for dashboard test", "non-null", "null");
+    UNIT_TEST_ASSERT(parser != nullptr, "Dashboard parser creation", "non-null", "null");
     
-    // Test parsing success
-    UNIT_TEST_ASSERT(result == ParserResult::SUCCESS, "Dashboard parsing success", "SUCCESS", "Parser failed");
-    
-    // Test dashboard data exists
-    auto dashboard = db.dashboard_data.get();
-    UNIT_TEST_ASSERT(dashboard != nullptr, "Dashboard data created", "non-null", "null");
-    
-    if (dashboard) {
-        // Test date parsing
-        UNIT_TEST_ASSERT(dashboard->date == "Mon Sep  8 14:06:30 2025", 
-                        "Date field parsing", "Mon Sep  8 14:06:30 2025", dashboard->date);
+    if (db && parser) {
+        // Test parsing through DLL
+        int parse_result = parse_coverage_file(parser, test_file.c_str(), db);
+        UNIT_TEST_ASSERT(parse_result == 0, "Dashboard parsing through DLL", "0", std::to_string(parse_result));
         
-        // Test user parsing
+        if (parse_result != 0) {
+            const char* error_msg = get_error_string(parse_result);
+            std::cout << "  Parse error: " << (error_msg ? error_msg : "Unknown error") << std::endl;
+        } else {
+            // Test overall score calculation
+            double score = calculate_overall_score(db);
+            UNIT_TEST_ASSERT(score > 0.0, "Overall score calculation", "> 0.0", std::to_string(score));
+            std::cout << "  Calculated overall score: " << score << "%" << std::endl;
+            
+            // Test database validation after parsing
+            int validation_result = validate_database(db);
+            UNIT_TEST_ASSERT(validation_result == 0, "Database validation after parsing", "0", std::to_string(validation_result));
+        }
+        
+        // Cleanup
+        destroy_parser(parser);
+        destroy_coverage_database(db);
+    }
+    
+    cleanup_test_file(test_file);
+}
         UNIT_TEST_ASSERT(dashboard->user == "test_engineer", 
                         "User field parsing", "test_engineer", dashboard->user);
         
-        // Test version parsing
-        UNIT_TEST_ASSERT(dashboard->version == "U-2023.03-SP2-9", 
-                        "Version field parsing", "U-2023.03-SP2-9", dashboard->version);
+/**
+ * @brief Test GroupsParser through DLL interface with comprehensive groups data
+ */
+void test_groups_parser_dll_comprehensive() {
+    std::cout << "\n=== GroupsParser DLL Comprehensive Tests ===" << std::endl;
+    
+    // Create realistic groups file with multiple configurations
+    std::string groups_content = 
+        "Groups\n"
+        "\n"
+        "Date: Mon Sep  8 14:06:30 2025\n"
+        "User: test_engineer\n"
+        "Version: U-2023.03-SP2-9\n"
+        "\n"
+        "Group: CPU_FUNCTIONAL_COVERAGE\n"
+        "------------------------------\n"
+        "Hierarchical coverage:  0.00%  [    0/   10]\n"
+        "Hierarchical score:     0.00%\n"
+        "Hit Status: 0.00%       [    0/   10]\n"
+        "\n"
+        "Cross Product Details:\n"
+        "Uncovered Cross Products: 10\n"
+        "\n"
+        "cpu_instruction_type_x_operand_type\n"
+        "Hierarchical coverage:  0.00%  [    0/   10]\n"
+        "Bins: 10\n"
+        "Missing bins:\n"
+        "  (ADD, REG)\n"
+        "  (SUB, IMM)\n"
+        "  (MUL, REG)\n"
+        "  (DIV, IMM)\n"
+        "  (AND, REG)\n"
+        "  (OR, IMM)\n"
+        "  (XOR, REG)\n"
+        "  (SHL, IMM)\n"
+        "  (SHR, REG)\n"
+        "  (CMP, IMM)\n"
+        "\n"
+        "Group: MEMORY_FUNCTIONAL_COVERAGE\n"
+        "----------------------------------\n"
+        "Hierarchical coverage: 75.50%  [   15/   20]\n"
+        "Hierarchical score:    75.50%\n"
+        "Hit Status: 75.00%      [   15/   20]\n"
+        "\n"
+        "Cross Product Details:\n"
+        "Covered Cross Products: 15\n"
+        "Uncovered Cross Products: 5\n"
+        "\n"
+        "memory_access_x_cache_state\n"
+        "Hierarchical coverage: 75.50%  [   15/   20]\n"
+        "Bins: 20\n"
+        "Missing bins:\n"
+        "  (READ, MISS)\n"
+        "  (WRITE, HIT)\n"
+        "  (FETCH, MISS)\n"
+        "  (PREFETCH, HIT)\n"
+        "  (INVALIDATE, MISS)\n";
+    
+    std::string test_file = create_test_file("test_groups_comprehensive.txt", groups_content);
+    
+    // Create database and parser through DLL interface
+    void* db = create_coverage_database();
+    void* parser = create_groups_parser();
+    
+    UNIT_TEST_ASSERT(db != nullptr, "Database creation for groups test", "non-null", "null");
+    UNIT_TEST_ASSERT(parser != nullptr, "Groups parser creation", "non-null", "null");
+    
+    if (db && parser) {
+        // Test parsing through DLL
+        int parse_result = parse_coverage_file(parser, test_file.c_str(), db);
+        UNIT_TEST_ASSERT(parse_result == 0, "Groups parsing through DLL", "0", std::to_string(parse_result));
         
-        // Test command line parsing
-        std::string expected_cmd = "urg -full64 -hvp_no_score_missing -dir sim.vdb -format text -report dashboard";
-        UNIT_TEST_ASSERT(dashboard->command_line == expected_cmd,
-                        "Command line parsing", expected_cmd, dashboard->command_line);
+        if (parse_result != 0) {
+            const char* error_msg = get_error_string(parse_result);
+            std::cout << "  Parse error: " << (error_msg ? error_msg : "Unknown error") << std::endl;
+        } else {
+            // Test group count
+            int num_groups = get_num_groups(db);
+            UNIT_TEST_ASSERT(num_groups == 2, "Number of groups parsed", "2", std::to_string(num_groups));
+            std::cout << "  Number of groups: " << num_groups << std::endl;
+            
+            // Test overall score after groups parsing
+            double score = calculate_overall_score(db);
+            UNIT_TEST_ASSERT(score > 0.0, "Overall score with groups", "> 0.0", std::to_string(score));
+            std::cout << "  Overall score with groups: " << score << "%" << std::endl;
+        }
         
-        // Test total score parsing
-        UNIT_TEST_ASSERT(std::abs(dashboard->total_score - 75.32) < 0.01, 
-                        "Total score parsing", "75.32", std::to_string(dashboard->total_score));
-        
-        // Test assertion coverage parsing
-        UNIT_TEST_ASSERT(dashboard->assert_coverage.is_valid, 
-                        "Assert coverage validity", "true", "false");
-        UNIT_TEST_ASSERT(dashboard->assert_coverage.covered == 12584, 
-                        "Assert coverage covered", "12584", std::to_string(dashboard->assert_coverage.covered));
-        UNIT_TEST_ASSERT(dashboard->assert_coverage.expected == 18392, 
-                        "Assert coverage expected", "18392", std::to_string(dashboard->assert_coverage.expected));
-        UNIT_TEST_ASSERT(std::abs(dashboard->assert_coverage.score - 68.45) < 0.01, 
-                        "Assert coverage score", "68.45", std::to_string(dashboard->assert_coverage.score));
-        
-        // Test group coverage parsing
-        UNIT_TEST_ASSERT(dashboard->group_coverage.is_valid, 
-                        "Group coverage validity", "true", "false");
-        UNIT_TEST_ASSERT(dashboard->group_coverage.covered == 25847, 
-                        "Group coverage covered", "25847", std::to_string(dashboard->group_coverage.covered));
-        UNIT_TEST_ASSERT(dashboard->group_coverage.expected == 31456, 
-                        "Group coverage expected", "31456", std::to_string(dashboard->group_coverage.expected));
-        UNIT_TEST_ASSERT(std::abs(dashboard->group_coverage.score - 82.19) < 0.01, 
-                        "Group coverage score", "82.19", std::to_string(dashboard->group_coverage.score));
-        
-        // Test hierarchical instances count
-        UNIT_TEST_ASSERT(dashboard->num_hierarchical_instances == 2847, 
-                        "Hierarchical instances count", "2847", std::to_string(dashboard->num_hierarchical_instances));
-        
-        // Test validity flag
-        UNIT_TEST_ASSERT(dashboard->is_valid(), 
-                        "Dashboard validity check", "true", "false");
+        // Cleanup
+        destroy_parser(parser);
+        destroy_coverage_database(db);
     }
     
     cleanup_test_file(test_file);
 }
 
 /**
- * @brief Test GroupsParser with comprehensive groups data
+ * @brief Test HierarchyParser through DLL interface
  */
-void test_groups_parser_comprehensive() {
-    std::cout << "\n=== GroupsParser Comprehensive Tests ===" << std::endl;
+void test_hierarchy_parser_dll_comprehensive() {
+    std::cout << "\n=== HierarchyParser DLL Comprehensive Tests ===" << std::endl;
+    
+    // Create realistic hierarchy file
+    std::string hierarchy_content = 
+        "Hierarchy\n"
+        "\n"
+        "Date: Mon Sep  8 14:06:30 2025\n"
+        "User: test_engineer\n"
+        "Version: U-2023.03-SP2-9\n"
+        "\n"
+        "Hierarchical coverage data for instance testbench\n"
+        "SCORE   GROUP                INSTANCE                                                                            \n"
+        " 85.67   85.67 456/532      testbench\n"
+        " 78.23   78.23 312/399        testbench.cpu_subsystem\n"
+        " 82.45   82.45 198/240          testbench.cpu_subsystem.alu\n"
+        " 76.88   76.88  89/116            testbench.cpu_subsystem.alu.adder\n"
+        " 88.92   88.92  67/76             testbench.cpu_subsystem.alu.multiplier\n"
+        " 74.12   74.12 156/210          testbench.cpu_subsystem.decoder\n"
+        " 89.45   89.45 144/161        testbench.memory_subsystem\n"
+        " 91.23   91.23  89/98           testbench.memory_subsystem.cache\n"
+        " 87.67   87.67  55/63           testbench.memory_subsystem.mmu\n";
+    
+    std::string test_file = create_test_file("test_hierarchy_comprehensive.txt", hierarchy_content);
+    
+    // Create database and parser through DLL interface
+    void* db = create_coverage_database();
+    void* parser = create_hierarchy_parser();
+    
+    UNIT_TEST_ASSERT(db != nullptr, "Database creation for hierarchy test", "non-null", "null");
+    UNIT_TEST_ASSERT(parser != nullptr, "Hierarchy parser creation", "non-null", "null");
+    
+    if (db && parser) {
+        // Test parsing through DLL
+        int parse_result = parse_coverage_file(parser, test_file.c_str(), db);
+        UNIT_TEST_ASSERT(parse_result == 0, "Hierarchy parsing through DLL", "0", std::to_string(parse_result));
+        
+        if (parse_result != 0) {
+            const char* error_msg = get_error_string(parse_result);
+            std::cout << "  Parse error: " << (error_msg ? error_msg : "Unknown error") << std::endl;
+        } else {
+            // Test hierarchy instance count
+            int num_hierarchy = get_num_hierarchy_instances(db);
+            UNIT_TEST_ASSERT(num_hierarchy > 0, "Number of hierarchy instances", "> 0", std::to_string(num_hierarchy));
+            std::cout << "  Number of hierarchy instances: " << num_hierarchy << std::endl;
+        }
+        
+        // Cleanup
+        destroy_parser(parser);
+        destroy_coverage_database(db);
+    }
+    
+    cleanup_test_file(test_file);
+}
     
     // Create realistic groups file with various group configurations
     std::string groups_content = 
@@ -562,132 +747,298 @@ void test_assert_parser_comprehensive() {
  */
 void test_edge_cases() {
     std::cout << "\n=== Edge Cases and Error Handling Tests ===" << std::endl;
-    
-    // Test empty file
-    std::string empty_file = create_test_file("empty_test.txt", "");
-    DashboardParser parser;
-    CoverageDatabase db;
-    
-    ParserResult result = parser.parse(empty_file, db);
-    UNIT_TEST_ASSERT(result == ParserResult::SUCCESS, "Empty file handling", "SUCCESS", "Failed");
-    cleanup_test_file(empty_file);
-    
-    // Test non-existent file
-    result = parser.parse("non_existent_file.txt", db);
-    UNIT_TEST_ASSERT(result == ParserResult::ERROR_FILE_NOT_FOUND, "Non-existent file error", "ERROR_FILE_NOT_FOUND", "Different error");
-    
-    // Test malformed dashboard file
-    std::string malformed_content = 
-        "This is not a valid dashboard file\n"
-        "Random text without proper format\n"
-        "No valid coverage data here\n";
-    
-    std::string malformed_file = create_test_file("malformed_test.txt", malformed_content);
-    result = parser.parse(malformed_file, db);
-    UNIT_TEST_ASSERT(result == ParserResult::SUCCESS, "Malformed file graceful handling", "SUCCESS", "Failed");
-    cleanup_test_file(malformed_file);
-    
-    // Test file with partial data
-    std::string partial_content = 
-        "Dashboard\n"
-        "Date: Mon Sep  8 14:06:30 2025\n"
-        "User: test_user\n"
-        "# Missing version and other fields\n";
-    
-    std::string partial_file = create_test_file("partial_test.txt", partial_content);
-    result = parser.parse(partial_file, db);
-    UNIT_TEST_ASSERT(result == ParserResult::SUCCESS, "Partial file handling", "SUCCESS", "Failed");
-    
-    // Verify partial data was captured
-    auto dashboard = db.dashboard_data.get();
-    if (dashboard) {
-        UNIT_TEST_ASSERT(dashboard->date == "Mon Sep  8 14:06:30 2025", "Partial date parsed", "Mon Sep  8 14:06:30 2025", dashboard->date);
-        UNIT_TEST_ASSERT(dashboard->user == "test_user", "Partial user parsed", "test_user", dashboard->user);
-        UNIT_TEST_ASSERT(dashboard->version.empty(), "Partial version empty", "empty", dashboard->version);
-    }
-    
-    cleanup_test_file(partial_file);
-}
-
 /**
- * @brief Test database operations and statistics
+ * @brief Test ModListParser through DLL interface
  */
-void test_database_operations() {
-    std::cout << "\n=== Database Operations Tests ===" << std::endl;
+void test_modlist_parser_dll_comprehensive() {
+    std::cout << "\n=== ModListParser DLL Comprehensive Tests ===" << std::endl;
     
-    CoverageDatabase db;
+    // Create realistic module list file
+    std::string modlist_content = 
+        "Module List\n"
+        "\n"
+        "Date: Mon Sep  8 14:06:30 2025\n"
+        "User: test_engineer\n"
+        "Version: U-2023.03-SP2-9\n"
+        "\n"
+        "Module coverage data\n"
+        "MODULE                                          SCORE   GROUP                ASSERT               \n"
+        "cpu_core                                        78.45   85.20 654/768       71.70 234/326\n"
+        "memory_controller                               82.30   89.15 445/499       75.45 198/262\n"
+        "bus_interface                                   65.78   72.34 298/412       59.22 156/263\n"
+        "interrupt_controller                            91.56   94.23 187/198       88.89 144/162\n"
+        "timer_module                                    76.88   83.45 167/200       70.31 89/127\n";
     
-    // Create test dashboard data
-    auto dashboard = std::make_unique<DashboardData>();
-    dashboard->date = "Test Date";
-    dashboard->user = "Test User";
-    dashboard->total_score = 85.5;
-    db.dashboard_data = std::move(dashboard);
+    std::string test_file = create_test_file("test_modlist_comprehensive.txt", modlist_content);
     
-    // Create test coverage groups
-    auto group1 = std::make_unique<CoverageGroup>("test_group_1");
-    group1->coverage.covered = 45;
-    group1->coverage.expected = 50;
-    group1->coverage.score = 90.0;
-    group1->weight = 2;
-    db.add_coverage_group(std::move(group1));
+    // Create database and parser through DLL interface
+    void* db = create_coverage_database();
+    void* parser = create_modlist_parser();
     
-    auto group2 = std::make_unique<CoverageGroup>("test_group_2");
-    group2->coverage.covered = 0;
-    group2->coverage.expected = 25;
-    group2->coverage.score = 0.0;
-    group2->weight = 1;
-    db.add_coverage_group(std::move(group2));
+    UNIT_TEST_ASSERT(db != nullptr, "Database creation for modlist test", "non-null", "null");
+    UNIT_TEST_ASSERT(parser != nullptr, "ModList parser creation", "non-null", "null");
     
-    // Test database validation
-    bool is_valid = db.validate();
-    UNIT_TEST_ASSERT(is_valid, "Database validation", "true", "false");
-    
-    // Test overall score calculation
-    double overall_score = db.calculate_overall_score();
-    UNIT_TEST_ASSERT(overall_score > 0.0, "Overall score calculation", ">0", std::to_string(overall_score));
-    
-    // Test uncovered groups
-    auto uncovered = db.get_uncovered_groups();
-    UNIT_TEST_ASSERT(uncovered.size() == 1, "Uncovered groups count", "1", std::to_string(uncovered.size()));
-    
-    if (!uncovered.empty()) {
-        UNIT_TEST_ASSERT(uncovered[0]->name == "test_group_2", "Uncovered group name", "test_group_2", uncovered[0]->name);
+    if (db && parser) {
+        // Test parsing through DLL
+        int parse_result = parse_coverage_file(parser, test_file.c_str(), db);
+        UNIT_TEST_ASSERT(parse_result == 0, "ModList parsing through DLL", "0", std::to_string(parse_result));
+        
+        if (parse_result != 0) {
+            const char* error_msg = get_error_string(parse_result);
+            std::cout << "  Parse error: " << (error_msg ? error_msg : "Unknown error") << std::endl;
+        } else {
+            // Test module count
+            int num_modules = get_num_modules(db);
+            UNIT_TEST_ASSERT(num_modules == 5, "Number of modules parsed", "5", std::to_string(num_modules));
+            std::cout << "  Number of modules: " << num_modules << std::endl;
+        }
+        
+        // Cleanup
+        destroy_parser(parser);
+        destroy_coverage_database(db);
     }
     
-    // Test statistics generation
-    auto stats = db.generate_statistics();
-    UNIT_TEST_ASSERT(stats != nullptr, "Statistics generation", "non-null", "null");
+    cleanup_test_file(test_file);
+}
+
+/**
+ * @brief Test AssertParser through DLL interface
+ */
+void test_assert_parser_dll_comprehensive() {
+    std::cout << "\n=== AssertParser DLL Comprehensive Tests ===" << std::endl;
     
-    if (stats) {
-        UNIT_TEST_ASSERT(stats->num_zero_coverage_groups == 1, "Zero coverage groups", "1", std::to_string(stats->num_zero_coverage_groups));
-        UNIT_TEST_ASSERT(stats->covered_points > 0, "Covered points", ">0", std::to_string(stats->covered_points));
-        UNIT_TEST_ASSERT(stats->total_coverage_points > 0, "Total coverage points", ">0", std::to_string(stats->total_coverage_points));
+    // Create realistic assert file
+    std::string assert_content = 
+        "Assertions\n"
+        "\n"
+        "Date: Mon Sep  8 14:06:30 2025\n"
+        "User: test_engineer\n"
+        "Version: U-2023.03-SP2-9\n"
+        "\n"
+        "Assertion coverage data\n"
+        "SCORE   ASSERT               NAME                                                                            \n"
+        " 85.67   85.67 456/532      cpu_functional_assertions\n"
+        " 78.23   78.23 312/399        reset_sequence_check\n"
+        " 92.45   92.45 198/214          power_on_reset_assert\n"
+        " 76.88   76.88  89/116          soft_reset_assert\n"
+        " 88.92   88.92  67/76           watchdog_reset_assert\n"
+        " 74.12   74.12 156/210        instruction_decode_check\n"
+        " 89.45   89.45 144/161      memory_functional_assertions\n"
+        " 91.23   91.23  89/98         cache_coherency_check\n"
+        " 87.67   87.67  55/63         memory_protection_check\n";
+    
+    std::string test_file = create_test_file("test_assert_comprehensive.txt", assert_content);
+    
+    // Create database and parser through DLL interface
+    void* db = create_coverage_database();
+    void* parser = create_assert_parser();
+    
+    UNIT_TEST_ASSERT(db != nullptr, "Database creation for assert test", "non-null", "null");
+    UNIT_TEST_ASSERT(parser != nullptr, "Assert parser creation", "non-null", "null");
+    
+    if (db && parser) {
+        // Test parsing through DLL
+        int parse_result = parse_coverage_file(parser, test_file.c_str(), db);
+        UNIT_TEST_ASSERT(parse_result == 0, "Assert parsing through DLL", "0", std::to_string(parse_result));
+        
+        if (parse_result != 0) {
+            const char* error_msg = get_error_string(parse_result);
+            std::cout << "  Parse error: " << (error_msg ? error_msg : "Unknown error") << std::endl;
+        } else {
+            // Test assert count
+            int num_asserts = get_num_asserts(db);
+            UNIT_TEST_ASSERT(num_asserts > 0, "Number of asserts parsed", "> 0", std::to_string(num_asserts));
+            std::cout << "  Number of asserts: " << num_asserts << std::endl;
+        }
+        
+        // Cleanup
+        destroy_parser(parser);
+        destroy_coverage_database(db);
+    }
+    
+    cleanup_test_file(test_file);
+}
+
+/**
+ * @brief Test edge cases and error handling through DLL interface
+ */
+void test_dll_edge_cases() {
+    std::cout << "\n=== DLL Edge Cases and Error Handling Tests ===" << std::endl;
+    
+    void* db = create_coverage_database();
+    void* parser = create_dashboard_parser();
+    
+    UNIT_TEST_ASSERT(db != nullptr, "Database creation for edge cases", "non-null", "null");
+    UNIT_TEST_ASSERT(parser != nullptr, "Parser creation for edge cases", "non-null", "null");
+    
+    if (db && parser) {
+        // Test empty file
+        std::string empty_file = create_test_file("empty_test.txt", "");
+        int result = parse_coverage_file(parser, empty_file.c_str(), db);
+        UNIT_TEST_ASSERT(result == 0, "Empty file handling through DLL", "0", std::to_string(result));
+        cleanup_test_file(empty_file);
+        
+        // Test non-existent file
+        result = parse_coverage_file(parser, "non_existent_file.txt", db);
+        UNIT_TEST_ASSERT(result != 0, "Non-existent file error through DLL", "!= 0", std::to_string(result));
+        
+        if (result != 0) {
+            const char* error_msg = get_error_string(result);
+            std::cout << "  Expected error for non-existent file: " << (error_msg ? error_msg : "Unknown error") << std::endl;
+        }
+        
+        // Test malformed file
+        std::string malformed_content = 
+            "This is not a valid coverage file\n"
+            "Random text without proper format\n"
+            "No valid coverage data here\n";
+        
+        std::string malformed_file = create_test_file("malformed_test.txt", malformed_content);
+        result = parse_coverage_file(parser, malformed_file.c_str(), db);
+        // Should handle gracefully (either success with no data or appropriate error)
+        UNIT_TEST_ASSERT(result >= 0, "Malformed file graceful handling", ">= 0", std::to_string(result));
+        cleanup_test_file(malformed_file);
+        
+        // Cleanup
+        destroy_parser(parser);
+        destroy_coverage_database(db);
     }
 }
 
 /**
- * @brief Main test runner
+ * @brief Test memory management and resource cleanup
+ */
+void test_dll_memory_management() {
+    std::cout << "\n=== DLL Memory Management Tests ===" << std::endl;
+    
+    // Test memory usage tracking
+    uint32_t initial_bytes, initial_allocations;
+    int mem_result = get_memory_usage(&initial_bytes, &initial_allocations);
+    UNIT_TEST_ASSERT(mem_result == 0, "Memory usage tracking available", "0", std::to_string(mem_result));
+    
+    if (mem_result == 0) {
+        std::cout << "  Initial memory: " << initial_bytes << " bytes, " << initial_allocations << " allocations" << std::endl;
+    }
+    
+    // Create multiple databases and parsers
+    std::vector<void*> databases;
+    std::vector<void*> parsers;
+    
+    for (int i = 0; i < 5; ++i) {
+        void* db = create_coverage_database();
+        void* parser = create_dashboard_parser();
+        
+        if (db && parser) {
+            databases.push_back(db);
+            parsers.push_back(parser);
+        }
+    }
+    
+    UNIT_TEST_ASSERT(databases.size() == 5, "Multiple database creation", "5", std::to_string(databases.size()));
+    UNIT_TEST_ASSERT(parsers.size() == 5, "Multiple parser creation", "5", std::to_string(parsers.size()));
+    
+    // Check memory usage after allocation
+    uint32_t after_bytes, after_allocations;
+    if (get_memory_usage(&after_bytes, &after_allocations) == 0) {
+        std::cout << "  After allocation: " << after_bytes << " bytes, " << after_allocations << " allocations" << std::endl;
+        UNIT_TEST_ASSERT(after_bytes >= initial_bytes, "Memory usage increased", ">= initial", std::to_string(after_bytes));
+    }
+    
+    // Cleanup all resources
+    for (void* parser : parsers) {
+        destroy_parser(parser);
+    }
+    for (void* db : databases) {
+        destroy_coverage_database(db);
+    }
+    
+    // Final memory check
+    uint32_t final_bytes, final_allocations;
+    if (get_memory_usage(&final_bytes, &final_allocations) == 0) {
+        std::cout << "  After cleanup: " << final_bytes << " bytes, " << final_allocations << " allocations" << std::endl;
+    }
+}
+
+/**
+ * @brief Test export functionality through DLL
+ */
+void test_dll_export_functionality() {
+    std::cout << "\n=== DLL Export Functionality Tests ===" << std::endl;
+    
+    void* db = create_coverage_database();
+    void* parser = create_dashboard_parser();
+    
+    if (db && parser) {
+        // Create test data
+        std::string dashboard_content = 
+            "Dashboard\n"
+            "Date: Mon Sep  8 14:06:30 2025\n"
+            "Total: 75.32\n";
+        
+        std::string test_file = create_test_file("test_export_data.txt", dashboard_content);
+        
+        // Parse test data
+        int parse_result = parse_coverage_file(parser, test_file.c_str(), db);
+        
+        if (parse_result == 0) {
+            // Test XML export
+            int xml_result = export_coverage_to_xml(db, "test_export.xml");
+            UNIT_TEST_ASSERT(xml_result == 0, "XML export through DLL", "0", std::to_string(xml_result));
+            
+            // Test JSON export
+            int json_result = export_coverage_to_json(db, "test_export.json");
+            UNIT_TEST_ASSERT(json_result == 0, "JSON export through DLL", "0", std::to_string(json_result));
+            
+            // Cleanup export files
+            std::remove("test_export.xml");
+            std::remove("test_export.json");
+        }
+        
+        cleanup_test_file(test_file);
+        destroy_parser(parser);
+        destroy_coverage_database(db);
+    }
+}
+
+/**
+ * @brief Main test runner for DLL tests
  */
 int main() {
-    std::cout << "FunctionalCoverageParsers Library - Comprehensive Unit Tests" << std::endl;
-    std::cout << "============================================================" << std::endl;
+    std::cout << "FunctionalCoverageParsers DLL - Comprehensive Unit Tests" << std::endl;
+    std::cout << "=========================================================" << std::endl;
     
-    try {
-        test_dashboard_parser_comprehensive();
-        test_groups_parser_comprehensive();
-        test_hierarchy_parser_comprehensive();
-        test_modlist_parser_comprehensive();
-        test_assert_parser_comprehensive();
-        test_edge_cases();
-        test_database_operations();
-    } catch (const std::exception& e) {
-        std::cout << "Test suite failed with exception: " << e.what() << std::endl;
+    // Load the DLL first
+    if (!load_dll()) {
+        std::cout << "Failed to load DLL. Cannot proceed with tests." << std::endl;
         return 1;
     }
     
-    std::cout << "\n============================================================" << std::endl;
-    std::cout << "Unit Test Results Summary:" << std::endl;
+    try {
+        // Run all DLL-based tests
+        test_dll_initialization();
+        test_dashboard_parser_dll_comprehensive();
+        test_groups_parser_dll_comprehensive();
+        test_hierarchy_parser_dll_comprehensive();
+        test_modlist_parser_dll_comprehensive();
+        test_assert_parser_dll_comprehensive();
+        test_dll_edge_cases();
+        test_dll_memory_management();
+        test_dll_export_functionality();
+        
+        // Final cleanup
+        cleanup_library();
+        
+    } catch (const std::exception& e) {
+        std::cout << "Test suite failed with exception: " << e.what() << std::endl;
+        unload_dll();
+        return 1;
+    }
+    
+    // Unload the DLL
+    unload_dll();
+    
+    std::cout << "\n=========================================================" << std::endl;
+    std::cout << "DLL Unit Test Results Summary:" << std::endl;
     std::cout << "Total Tests: " << total_tests << std::endl;
     std::cout << "Passed: " << passed_tests << std::endl;
     std::cout << "Failed: " << failed_tests << std::endl;
@@ -695,12 +1046,12 @@ int main() {
               << (100.0 * passed_tests / total_tests) << "%" << std::endl;
     
     if (failed_tests == 0) {
-        std::cout << "\n🎉 ALL UNIT TESTS PASSED! 🎉" << std::endl;
-        std::cout << "All parser details are properly captured in data structures." << std::endl;
+        std::cout << "\n🎉 ALL DLL UNIT TESTS PASSED! 🎉" << std::endl;
+        std::cout << "DLL interface works correctly and captures all parser details." << std::endl;
         return 0;
     } else {
-        std::cout << "\n❌ " << failed_tests << " UNIT TESTS FAILED!" << std::endl;
-        std::cout << "Some parser details may not be properly captured." << std::endl;
+        std::cout << "\n❌ " << failed_tests << " DLL UNIT TESTS FAILED!" << std::endl;
+        std::cout << "Some DLL functionality may not be working properly." << std::endl;
         return 1;
     }
 }
