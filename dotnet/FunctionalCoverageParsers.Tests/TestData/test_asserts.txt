@@ -1,0 +1,12 @@
+Assertion Coverage Report
+
+Total Assertions Coverage Summary
+COVERED EXPECTED SCORE
+500     1000     50.00
+
+Total assertions in report: 3
+-------------------------------------------------------------------------------
+COVERED EXPECTED SCORE  NAME
+100     200      50.00   test.assertion1
+150     300      50.00   test.assertion2  
+250     500      50.00   test.assertion3

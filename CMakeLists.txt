@@ -29,6 +29,7 @@ set(PARSER_SOURCES
     src/assert_parser.cpp
     src/parser_utils.cpp
     src/dll_api.cpp
+    src/high_performance_parser.cpp
 )
 
 # Header files
@@ -36,6 +37,7 @@ set(PARSER_HEADERS
     include/coverage_types.h
     include/functional_coverage_parser.h
     include/functional_coverage_parser_dll.h
+    include/high_performance_parser.h
 )
 
 # Create shared library (DLL on Windows, .so on Linux, .dylib on macOS)

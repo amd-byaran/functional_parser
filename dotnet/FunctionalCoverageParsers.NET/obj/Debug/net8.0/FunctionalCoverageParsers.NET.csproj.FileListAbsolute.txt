@@ -1,0 +1,15 @@
+C:\Users\byaran\OneDrive - Advanced Micro Devices Inc\programming\coverage_analyzer\FunctionalParser\dotnet\FunctionalCoverageParsers.NET\obj\Debug\net8.0\FunctionalCoverageParsers.NET.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\byaran\OneDrive - Advanced Micro Devices Inc\programming\coverage_analyzer\FunctionalParser\dotnet\FunctionalCoverageParsers.NET\obj\Debug\net8.0\FunctionalCoverageParsers.NET.AssemblyInfoInputs.cache
+C:\Users\byaran\OneDrive - Advanced Micro Devices Inc\programming\coverage_analyzer\FunctionalParser\dotnet\FunctionalCoverageParsers.NET\obj\Debug\net8.0\FunctionalCoverageParsers.NET.AssemblyInfo.cs
+C:\Users\byaran\OneDrive - Advanced Micro Devices Inc\programming\coverage_analyzer\FunctionalParser\dotnet\FunctionalCoverageParsers.NET\obj\Debug\net8.0\FunctionalCoverageParsers.NET.csproj.CoreCompileInputs.cache
+C:\Users\byaran\OneDrive - Advanced Micro Devices Inc\programming\coverage_analyzer\FunctionalParser\dotnet\FunctionalCoverageParsers.NET\obj\Debug\net8.0\FunctionalCoverageParsers.NET.sourcelink.json
+C:\Users\byaran\OneDrive - Advanced Micro Devices Inc\programming\coverage_analyzer\FunctionalParser\dotnet\FunctionalCoverageParsers.NET\bin\Debug\net8.0\FunctionalCoverageParsers.dll
+C:\Users\byaran\OneDrive - Advanced Micro Devices Inc\programming\coverage_analyzer\FunctionalParser\dotnet\FunctionalCoverageParsers.NET\bin\Debug\net8.0\FunctionalCoverageParsers.NET.deps.json
+C:\Users\byaran\OneDrive - Advanced Micro Devices Inc\programming\coverage_analyzer\FunctionalParser\dotnet\FunctionalCoverageParsers.NET\bin\Debug\net8.0\FunctionalCoverageParsers.NET.dll
+C:\Users\byaran\OneDrive - Advanced Micro Devices Inc\programming\coverage_analyzer\FunctionalParser\dotnet\FunctionalCoverageParsers.NET\bin\Debug\net8.0\FunctionalCoverageParsers.NET.pdb
+C:\Users\byaran\OneDrive - Advanced Micro Devices Inc\programming\coverage_analyzer\FunctionalParser\dotnet\FunctionalCoverageParsers.NET\bin\Debug\net8.0\FunctionalCoverageParsers.NET.xml
+C:\Users\byaran\OneDrive - Advanced Micro Devices Inc\programming\coverage_analyzer\FunctionalParser\dotnet\FunctionalCoverageParsers.NET\obj\Debug\net8.0\FunctionalCoverageParsers.NET.dll
+C:\Users\byaran\OneDrive - Advanced Micro Devices Inc\programming\coverage_analyzer\FunctionalParser\dotnet\FunctionalCoverageParsers.NET\obj\Debug\net8.0\refint\FunctionalCoverageParsers.NET.dll
+C:\Users\byaran\OneDrive - Advanced Micro Devices Inc\programming\coverage_analyzer\FunctionalParser\dotnet\FunctionalCoverageParsers.NET\obj\Debug\net8.0\FunctionalCoverageParsers.NET.xml
+C:\Users\byaran\OneDrive - Advanced Micro Devices Inc\programming\coverage_analyzer\FunctionalParser\dotnet\FunctionalCoverageParsers.NET\obj\Debug\net8.0\FunctionalCoverageParsers.NET.pdb
+C:\Users\byaran\OneDrive - Advanced Micro Devices Inc\programming\coverage_analyzer\FunctionalParser\dotnet\FunctionalCoverageParsers.NET\obj\Debug\net8.0\ref\FunctionalCoverageParsers.NET.dll

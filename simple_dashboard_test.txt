@@ -1,0 +1,18 @@
+Dashboard
+
+Date: Mon Sep  8 14:06:30 2025
+
+User: test_engineer
+
+Version: U-2023.03-SP2-9
+Command line: urg -test
+
+-------------------------------------------------------------------------------
+Total Coverage Summary 
+SCORE   ASSERT               GROUP                
+ 31.56   22.11 60148/272087   41.01 134908/328987 
+
+-------------------------------------------------------------------------------
+Hierarchical coverage data for top-level instances 
+SCORE   ASSERT               NAME                                                                                                                                                            
+  0.00    0.00 0/66          test_instance.cpu.alu                                 

@@ -1,0 +1,63 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net6.0;net8.0;netstandard2.0</TargetFrameworks>
+    <RootNamespace>FunctionalCoverageParsers</RootNamespace>
+    <AssemblyName>FunctionalCoverageParsers.NET</AssemblyName>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>FunctionalCoverageParsers.NET</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Authors>AMD EDA Coverage Analysis Team</Authors>
+    <Company>Advanced Micro Devices, Inc.</Company>
+    <Product>FunctionalCoverageParsers .NET Wrapper</Product>
+    <Description>Managed .NET wrapper for the FunctionalCoverageParsers native library. Provides easy-to-use C# API for parsing EDA coverage files including dashboard, groups, hierarchy, module lists, and assertions.</Description>
+    <PackageDescription>Managed .NET wrapper for parsing EDA (Electronic Design Automation) coverage files. Supports dashboard.txt, groups.txt, hierarchy.txt, modlist.txt, and asserts.txt files with comprehensive data extraction and analysis capabilities.</PackageDescription>
+    <PackageTags>EDA;Coverage;Parsing;Electronics;ASIC;FPGA;Verification;Analysis</PackageTags>
+    <PackageProjectUrl>https://github.com/amd-byaran/functional_parser</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/amd-byaran/functional_parser</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Copyright>Copyright (c) 2025 Advanced Micro Devices, Inc.</Copyright>
+    <PackageReleaseNotes>
+      v1.0.0:
+      - Initial release of .NET wrapper
+      - Support for all major coverage file types
+      - Complete P/Invoke interface to native DLL
+      - Managed resource handling with IDisposable pattern
+      - Comprehensive error handling and exceptions
+      - Cross-platform support (.NET 6+, .NET Standard 2.0)
+    </PackageReleaseNotes>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <WarningsNotAsErrors>CS1591</WarningsNotAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <DefineConstants>TRACE</DefineConstants>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\bin\FunctionalCoverageParsers.dll">
+      <Pack>true</Pack>
+      <PackagePath>runtimes\win-x64\native\FunctionalCoverageParsers.dll</PackagePath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Memory" Version="4.5.5" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
+  </ItemGroup>
+
+</Project>

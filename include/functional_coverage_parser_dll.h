@@ -228,6 +228,86 @@ COVERAGE_PARSER_API int export_coverage_to_json(void* db_handle, const char* fil
 /** @} */
 
 /**
+ * @defgroup HighPerformance High-Performance Parsing
+ * @brief Ultra-fast parsing functions for huge files
+ * @{
+ */
+
+/**
+ * @brief Performance statistics structure
+ */
+typedef struct {
+    double parse_time_seconds;      /** Total parsing time in seconds */
+    uint32_t file_size_bytes;       /** File size in bytes */
+    uint32_t lines_processed;       /** Number of lines processed */
+    uint32_t groups_parsed;         /** Number of groups parsed */
+    uint32_t memory_allocated;      /** Memory allocated in bytes */
+    uint32_t threads_used;          /** Number of threads used */
+    double throughput_mb_per_sec;   /** Throughput in MB/s */
+} PerformanceStats;
+
+/**
+ * @brief Create high-performance groups parser
+ * 
+ * Creates an optimized parser for huge groups.txt files using:
+ * - Memory-mapped file I/O
+ * - SIMD vectorized operations
+ * - Parallel processing
+ * - Custom memory management
+ * 
+ * @return Parser handle or NULL on error
+ */
+COVERAGE_PARSER_API void* create_high_performance_groups_parser();
+
+/**
+ * @brief Create high-performance hierarchy parser
+ * @return Parser handle or NULL on error
+ */
+COVERAGE_PARSER_API void* create_high_performance_hierarchy_parser();
+
+/**
+ * @brief Create high-performance assert parser
+ * @return Parser handle or NULL on error
+ */
+COVERAGE_PARSER_API void* create_high_performance_assert_parser();
+
+/**
+ * @brief Parse file with high-performance parser
+ * 
+ * Uses optimized algorithms for maximum speed with huge files.
+ * Target performance: 100MB+ files in under 5 seconds.
+ * 
+ * @param parser_handle High-performance parser handle
+ * @param filename Path to coverage file
+ * @param db_handle Database handle
+ * @return Parser result code (0 = success)
+ */
+COVERAGE_PARSER_API int parse_coverage_file_high_performance(void* parser_handle, const char* filename, void* db_handle);
+
+/**
+ * @brief Get performance statistics from last parse operation
+ * 
+ * @param parser_handle High-performance parser handle
+ * @param stats Output structure for performance statistics
+ * @return Parser result code (0 = success)
+ */
+COVERAGE_PARSER_API int get_performance_stats(void* parser_handle, PerformanceStats* stats);
+
+/**
+ * @brief Auto-select optimal parser based on file size
+ * 
+ * Automatically chooses between standard and high-performance parsers
+ * based on file size and system capabilities.
+ * 
+ * @param filename Path to coverage file to analyze
+ * @param parser_type "groups", "hierarchy", "assert", etc.
+ * @return Parser handle or NULL on error
+ */
+COVERAGE_PARSER_API void* create_optimal_parser(const char* filename, const char* parser_type);
+
+/** @} */
+
+/**
  * @defgroup Memory Memory Management
  * @brief Memory and resource management functions
  * @{
