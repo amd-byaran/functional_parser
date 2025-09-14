@@ -20,10 +20,10 @@ using namespace coverage_parser;
 using namespace coverage_parser::performance;
 
 // Global handle management
-static std::map<void*, std::unique_ptr<BaseParser>> parser_handles;
 static std::map<void*, std::unique_ptr<HighPerformanceGroupsParser>> hp_groups_parsers;
 static std::map<void*, std::unique_ptr<HighPerformanceHierarchyParser>> hp_hierarchy_parsers;
 static std::map<void*, std::unique_ptr<HighPerformanceAssertParser>> hp_assert_parsers;
+static std::map<void*, std::unique_ptr<HighPerformanceDashboardParser>> hp_dashboard_parsers;
 static std::map<void*, std::unique_ptr<CoverageDatabase>> database_handles;
 static uint32_t next_handle_id = 1;
 
@@ -95,14 +95,14 @@ COVERAGE_PARSER_API void destroy_coverage_database(void* handle) {
 }
 
 /**
- * @brief Create dashboard parser
+ * @brief Create dashboard parser (high-performance optimized)
  * @return Parser handle or nullptr on failure
  */
 COVERAGE_PARSER_API void* create_dashboard_parser() {
     try {
-        auto parser = std::make_unique<DashboardParser>();
+        auto parser = std::make_unique<HighPerformanceDashboardParser>();
         void* handle = reinterpret_cast<void*>(next_handle_id++);
-        parser_handles[handle] = std::move(parser);
+        hp_dashboard_parsers[handle] = std::move(parser);
         return handle;
     } catch (...) {
         return nullptr;
@@ -110,14 +110,14 @@ COVERAGE_PARSER_API void* create_dashboard_parser() {
 }
 
 /**
- * @brief Create groups parser
+ * @brief Create groups parser (high-performance optimized)
  * @return Parser handle or nullptr on failure
  */
 COVERAGE_PARSER_API void* create_groups_parser() {
     try {
-        auto parser = std::make_unique<GroupsParser>();
+        auto parser = std::make_unique<HighPerformanceGroupsParser>();
         void* handle = reinterpret_cast<void*>(next_handle_id++);
-        parser_handles[handle] = std::move(parser);
+        hp_groups_parsers[handle] = std::move(parser);
         return handle;
     } catch (...) {
         return nullptr;
@@ -125,14 +125,14 @@ COVERAGE_PARSER_API void* create_groups_parser() {
 }
 
 /**
- * @brief Create hierarchy parser
+ * @brief Create hierarchy parser (high-performance optimized)
  * @return Parser handle or nullptr on failure
  */
 COVERAGE_PARSER_API void* create_hierarchy_parser() {
     try {
-        auto parser = std::make_unique<HierarchyParser>();
+        auto parser = std::make_unique<HighPerformanceHierarchyParser>();
         void* handle = reinterpret_cast<void*>(next_handle_id++);
-        parser_handles[handle] = std::move(parser);
+        hp_hierarchy_parsers[handle] = std::move(parser);
         return handle;
     } catch (...) {
         return nullptr;
@@ -140,29 +140,14 @@ COVERAGE_PARSER_API void* create_hierarchy_parser() {
 }
 
 /**
- * @brief Create module list parser
- * @return Parser handle or nullptr on failure
- */
-COVERAGE_PARSER_API void* create_modlist_parser() {
-    try {
-        auto parser = std::make_unique<ModuleListParser>();
-        void* handle = reinterpret_cast<void*>(next_handle_id++);
-        parser_handles[handle] = std::move(parser);
-        return handle;
-    } catch (...) {
-        return nullptr;
-    }
-}
-
-/**
- * @brief Create assert parser
+ * @brief Create assert parser (high-performance optimized)
  * @return Parser handle or nullptr on failure
  */
 COVERAGE_PARSER_API void* create_assert_parser() {
     try {
-        auto parser = std::make_unique<AssertParser>();
+        auto parser = std::make_unique<HighPerformanceAssertParser>();
         void* handle = reinterpret_cast<void*>(next_handle_id++);
-        parser_handles[handle] = std::move(parser);
+        hp_assert_parsers[handle] = std::move(parser);
         return handle;
     } catch (...) {
         return nullptr;
@@ -170,17 +155,21 @@ COVERAGE_PARSER_API void* create_assert_parser() {
 }
 
 /**
- * @brief Destroy parser
+ * @brief Destroy parser (high-performance optimized)
  * @param handle Parser handle
  */
 COVERAGE_PARSER_API void destroy_parser(void* handle) {
-    if (handle && parser_handles.find(handle) != parser_handles.end()) {
-        parser_handles.erase(handle);
-    }
+    if (!handle) return;
+    
+    // Try to remove from high-performance parser maps
+    hp_groups_parsers.erase(handle);
+    hp_hierarchy_parsers.erase(handle);
+    hp_assert_parsers.erase(handle);
+    hp_dashboard_parsers.erase(handle);
 }
 
 /**
- * @brief Parse coverage file
+ * @brief Parse coverage file (high-performance optimized)
  * @param parser_handle Parser handle
  * @param filename File to parse
  * @param db_handle Database handle
@@ -191,16 +180,42 @@ COVERAGE_PARSER_API int parse_coverage_file(void* parser_handle, const char* fil
         return static_cast<int>(ParserResult::ERROR_INVALID_PARAMETER);
     }
     
-    auto parser_it = parser_handles.find(parser_handle);
     auto db_it = database_handles.find(db_handle);
-    
-    if (parser_it == parser_handles.end() || db_it == database_handles.end()) {
+    if (db_it == database_handles.end()) {
         return static_cast<int>(ParserResult::ERROR_INVALID_PARAMETER);
     }
     
     try {
-        ParserResult result = parser_it->second->parse(filename, *db_it->second);
-        return static_cast<int>(result);
+        // Try groups parser first
+        auto groups_it = hp_groups_parsers.find(parser_handle);
+        if (groups_it != hp_groups_parsers.end()) {
+            ParserResult result = groups_it->second->parse(filename, *db_it->second);
+            return static_cast<int>(result);
+        }
+        
+        // Try hierarchy parser
+        auto hierarchy_it = hp_hierarchy_parsers.find(parser_handle);
+        if (hierarchy_it != hp_hierarchy_parsers.end()) {
+            ParserResult result = hierarchy_it->second->parse(filename, *db_it->second);
+            return static_cast<int>(result);
+        }
+        
+        // Try assert parser
+        auto assert_it = hp_assert_parsers.find(parser_handle);
+        if (assert_it != hp_assert_parsers.end()) {
+            ParserResult result = assert_it->second->parse(filename, *db_it->second);
+            return static_cast<int>(result);
+        }
+        
+        // Try dashboard parser
+        auto dashboard_it = hp_dashboard_parsers.find(parser_handle);
+        if (dashboard_it != hp_dashboard_parsers.end()) {
+            ParserResult result = dashboard_it->second->parse(filename, *db_it->second);
+            return static_cast<int>(result);
+        }
+        
+        return static_cast<int>(ParserResult::ERROR_INVALID_PARAMETER);
+        
     } catch (...) {
         return static_cast<int>(ParserResult::ERROR_PARSE_FAILED);
     }
@@ -388,10 +403,10 @@ COVERAGE_PARSER_API int export_coverage_to_json(void* db_handle, const char* fil
  * @brief Cleanup library resources
  */
 COVERAGE_PARSER_API void cleanup_library() {
-    parser_handles.clear();
     hp_groups_parsers.clear();
     hp_hierarchy_parsers.clear();
     hp_assert_parsers.clear();
+    hp_dashboard_parsers.clear();
     database_handles.clear();
     next_handle_id = 1;
 }
@@ -423,96 +438,9 @@ COVERAGE_PARSER_API int get_memory_usage(uint32_t* total_bytes, uint32_t* num_al
 // High-Performance Parser API Functions
 // ============================================================================
 
-/**
- * @brief Create high-performance groups parser
- * @return Parser handle or nullptr on failure
- */
-COVERAGE_PARSER_API void* create_high_performance_groups_parser() {
-    try {
-        auto parser = std::make_unique<HighPerformanceGroupsParser>();
-        void* handle = reinterpret_cast<void*>(next_handle_id++);
-        hp_groups_parsers[handle] = std::move(parser);
-        return handle;
-    } catch (...) {
-        return nullptr;
-    }
-}
 
-/**
- * @brief Create high-performance hierarchy parser
- * @return Parser handle or nullptr on failure
- */
-COVERAGE_PARSER_API void* create_high_performance_hierarchy_parser() {
-    try {
-        auto parser = std::make_unique<HighPerformanceHierarchyParser>();
-        void* handle = reinterpret_cast<void*>(next_handle_id++);
-        hp_hierarchy_parsers[handle] = std::move(parser);
-        return handle;
-    } catch (...) {
-        return nullptr;
-    }
-}
 
-/**
- * @brief Create high-performance assert parser
- * @return Parser handle or nullptr on failure
- */
-COVERAGE_PARSER_API void* create_high_performance_assert_parser() {
-    try {
-        auto parser = std::make_unique<HighPerformanceAssertParser>();
-        void* handle = reinterpret_cast<void*>(next_handle_id++);
-        hp_assert_parsers[handle] = std::move(parser);
-        return handle;
-    } catch (...) {
-        return nullptr;
-    }
-}
 
-/**
- * @brief Parse file with high-performance parser
- * @param parser_handle High-performance parser handle
- * @param filename Path to coverage file
- * @param db_handle Database handle
- * @return Parser result code (0 = success)
- */
-COVERAGE_PARSER_API int parse_coverage_file_high_performance(void* parser_handle, const char* filename, void* db_handle) {
-    if (!parser_handle || !filename || !db_handle) {
-        return static_cast<int>(ParserResult::ERROR_INVALID_PARAMETER);
-    }
-    
-    auto db_it = database_handles.find(db_handle);
-    if (db_it == database_handles.end()) {
-        return static_cast<int>(ParserResult::ERROR_INVALID_PARAMETER);
-    }
-    
-    try {
-        // Try groups parser first
-        auto groups_it = hp_groups_parsers.find(parser_handle);
-        if (groups_it != hp_groups_parsers.end()) {
-            ParserResult result = groups_it->second->parse(filename, *db_it->second);
-            return static_cast<int>(result);
-        }
-        
-        // Try hierarchy parser
-        auto hierarchy_it = hp_hierarchy_parsers.find(parser_handle);
-        if (hierarchy_it != hp_hierarchy_parsers.end()) {
-            ParserResult result = hierarchy_it->second->parse(filename, *db_it->second);
-            return static_cast<int>(result);
-        }
-        
-        // Try assert parser
-        auto assert_it = hp_assert_parsers.find(parser_handle);
-        if (assert_it != hp_assert_parsers.end()) {
-            ParserResult result = assert_it->second->parse(filename, *db_it->second);
-            return static_cast<int>(result);
-        }
-        
-        return static_cast<int>(ParserResult::ERROR_INVALID_PARAMETER);
-        
-    } catch (...) {
-        return static_cast<int>(ParserResult::ERROR_PARSE_FAILED);
-    }
-}
 
 /**
  * @brief Get performance statistics from last parse operation
@@ -576,9 +504,9 @@ COVERAGE_PARSER_API int get_performance_stats(void* parser_handle, PerformanceSt
 }
 
 /**
- * @brief Auto-select optimal parser based on file size
+ * @brief Auto-select optimal parser (always high-performance)
  * @param filename Path to coverage file to analyze
- * @param parser_type "groups", "hierarchy", "assert", etc.
+ * @param parser_type "groups", "hierarchy", "assert", "dashboard"
  * @return Parser handle or nullptr on error
  */
 COVERAGE_PARSER_API void* create_optimal_parser(const char* filename, const char* parser_type) {
@@ -588,27 +516,26 @@ COVERAGE_PARSER_API void* create_optimal_parser(const char* filename, const char
     
     try {
         std::string type(parser_type);
+        void* handle = reinterpret_cast<void*>(next_handle_id++);
         
         if (type == "groups") {
-            auto parser = PerformanceParserFactory::create_groups_parser(filename);
-            void* handle = reinterpret_cast<void*>(next_handle_id++);
-            
-            // Check if it's a high-performance parser
-            auto hp_parser = dynamic_cast<HighPerformanceGroupsParser*>(parser.get());
-            if (hp_parser) {
-                // Transfer ownership to high-performance map
-                parser.release();
-                hp_groups_parsers[handle] = std::unique_ptr<HighPerformanceGroupsParser>(hp_parser);
-            } else {
-                // Transfer ownership to regular parser map
-                auto base_parser = std::unique_ptr<BaseParser>(dynamic_cast<BaseParser*>(parser.release()));
-                parser_handles[handle] = std::move(base_parser);
-            }
-            
+            auto parser = std::make_unique<HighPerformanceGroupsParser>();
+            hp_groups_parsers[handle] = std::move(parser);
+            return handle;
+        } else if (type == "hierarchy") {
+            auto parser = std::make_unique<HighPerformanceHierarchyParser>();
+            hp_hierarchy_parsers[handle] = std::move(parser);
+            return handle;
+        } else if (type == "assert") {
+            auto parser = std::make_unique<HighPerformanceAssertParser>();
+            hp_assert_parsers[handle] = std::move(parser);
+            return handle;
+        } else if (type == "dashboard") {
+            auto parser = std::make_unique<HighPerformanceDashboardParser>();
+            hp_dashboard_parsers[handle] = std::move(parser);
             return handle;
         }
         
-        // Add similar logic for hierarchy and assert parsers...
         return nullptr;
         
     } catch (...) {

@@ -119,28 +119,10 @@ COVERAGE_PARSER_API double calculate_overall_score(void* db_handle);
 COVERAGE_PARSER_API void* create_dashboard_parser();
 
 /**
- * @brief Create groups parser
- * @return Parser handle or NULL on failure
- */
-COVERAGE_PARSER_API void* create_groups_parser();
-
-/**
- * @brief Create hierarchy parser
- * @return Parser handle or NULL on failure
- */
-COVERAGE_PARSER_API void* create_hierarchy_parser();
-
-/**
  * @brief Create module list parser
  * @return Parser handle or NULL on failure
  */
 COVERAGE_PARSER_API void* create_modlist_parser();
-
-/**
- * @brief Create assert parser
- * @return Parser handle or NULL on failure
- */
-COVERAGE_PARSER_API void* create_assert_parser();
 
 /**
  * @brief Destroy parser
@@ -247,7 +229,7 @@ typedef struct {
 } PerformanceStats;
 
 /**
- * @brief Create high-performance groups parser
+ * @brief Create groups parser (high-performance optimized)
  * 
  * Creates an optimized parser for huge groups.txt files using:
  * - Memory-mapped file I/O
@@ -257,37 +239,37 @@ typedef struct {
  * 
  * @return Parser handle or NULL on error
  */
-COVERAGE_PARSER_API void* create_high_performance_groups_parser();
+COVERAGE_PARSER_API void* create_groups_parser();
 
 /**
- * @brief Create high-performance hierarchy parser
+ * @brief Create hierarchy parser (high-performance optimized)
  * @return Parser handle or NULL on error
  */
-COVERAGE_PARSER_API void* create_high_performance_hierarchy_parser();
+COVERAGE_PARSER_API void* create_hierarchy_parser();
 
 /**
- * @brief Create high-performance assert parser
+ * @brief Create assert parser (high-performance optimized)
  * @return Parser handle or NULL on error
  */
-COVERAGE_PARSER_API void* create_high_performance_assert_parser();
+COVERAGE_PARSER_API void* create_assert_parser();
 
 /**
- * @brief Parse file with high-performance parser
+ * @brief Parse file with optimized parser
  * 
- * Uses optimized algorithms for maximum speed with huge files.
+ * Uses high-performance algorithms for maximum speed with huge files.
  * Target performance: 100MB+ files in under 5 seconds.
  * 
- * @param parser_handle High-performance parser handle
+ * @param parser_handle Parser handle
  * @param filename Path to coverage file
  * @param db_handle Database handle
  * @return Parser result code (0 = success)
  */
-COVERAGE_PARSER_API int parse_coverage_file_high_performance(void* parser_handle, const char* filename, void* db_handle);
+COVERAGE_PARSER_API int parse_coverage_file_optimized(void* parser_handle, const char* filename, void* db_handle);
 
 /**
  * @brief Get performance statistics from last parse operation
  * 
- * @param parser_handle High-performance parser handle
+ * @param parser_handle Parser handle
  * @param stats Output structure for performance statistics
  * @return Parser result code (0 = success)
  */

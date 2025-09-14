@@ -1,4 +1,4 @@
-﻿// Example usage of FunctionalCoverageParsers DLL
+// Example usage of FunctionalCoverageParsers DLL
 #include "functional_coverage_parser_dll.h"
 
 int main() {
