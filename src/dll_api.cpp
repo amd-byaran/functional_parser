@@ -51,13 +51,11 @@ COVERAGE_PARSER_API const char* get_error_string(ParserResult result) {
             return "Success";
         case ParserResult::ERROR_FILE_NOT_FOUND:
             return "File not found";
-        case ParserResult::ERROR_FILE_ACCESS:
-            return "File access error";
         case ParserResult::ERROR_PARSE_FAILED:
             return "Parse failed";
         case ParserResult::ERROR_INVALID_FORMAT:
             return "Invalid file format";
-        case ParserResult::ERROR_OUT_OF_MEMORY:
+        case ParserResult::ERROR_MEMORY_ALLOCATION:
             return "Out of memory";
         case ParserResult::ERROR_INVALID_PARAMETER:
             return "Invalid parameter";
